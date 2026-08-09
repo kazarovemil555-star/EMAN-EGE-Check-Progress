@@ -662,84 +662,102 @@ class EgeTrackerApp:
         ):
             subject_status = ft.Text(
                 value="Пробников пока нет",
-                size=13,
+                size=12,
                 color=BRAND_MUTED,
+                max_lines=2,
             )
 
             self.subject_status_texts[subject] = subject_status
 
+            edit_button = (
+                ft.IconButton(
+                    icon=ft.Icons.EDIT,
+                    tooltip="Переименовать предмет",
+                    data=index - 1,
+                    on_click=self.rename_subject_click,
+                    icon_color=BRAND_CYAN_SOFT,
+                    icon_size=20,
+                )
+                if index in (3, 4)
+                else None
+            )
+
+            row_controls = [
+                ft.Container(
+                    content=ft.Text(
+                        f"{index:02d}",
+                        size=14,
+                        weight=ft.FontWeight.BOLD,
+                        color=BRAND_CYAN,
+                    ),
+                    width=42,
+                    height=42,
+                    alignment=ft.Alignment.CENTER,
+                    border_radius=12,
+                    bgcolor=ft.Colors.with_opacity(
+                        0.10,
+                        BRAND_CYAN,
+                    ),
+                    border=ft.Border.all(
+                        1,
+                        ft.Colors.with_opacity(
+                            0.28,
+                            BRAND_CYAN,
+                        ),
+                    ),
+                ),
+                ft.Container(
+                    width=3,
+                    height=48,
+                    bgcolor=BRAND_CYAN,
+                    border_radius=8,
+                ),
+                ft.Column(
+                    controls=[
+                        self._create_subject_title(
+                            index - 1,
+                            subject,
+                        ),
+                        subject_status,
+                    ],
+                    spacing=4,
+                    expand=True,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+            ]
+
+            if edit_button is not None:
+                row_controls.append(edit_button)
+
+            row_controls.append(
+                ft.Icon(
+                    ft.Icons.CHEVRON_RIGHT,
+                    color=BRAND_CYAN_SOFT,
+                    size=24,
+                )
+            )
+
             card = ft.Container(
                 content=ft.Row(
-                    controls=[
-                        ft.Container(
-                            content=ft.Text(
-                                f"{index:02d}",
-                                size=15,
-                                weight=ft.FontWeight.BOLD,
-                                color=BRAND_CYAN,
-                            ),
-                            width=48,
-                            height=48,
-                            alignment=ft.Alignment.CENTER,
-                            border_radius=14,
-                            bgcolor=ft.Colors.with_opacity(
-                                0.10,
-                                BRAND_CYAN,
-                            ),
-                            border=ft.Border.all(
-                                1,
-                                ft.Colors.with_opacity(
-                                    0.28,
-                                    BRAND_CYAN,
-                                ),
-                            ),
-                        ),
-                        ft.Container(
-                            width=4,
-                            height=58,
-                            bgcolor=BRAND_CYAN,
-                            border_radius=8,
-                        ),
-                        ft.Column(
-                            controls=[
-                                self._create_subject_title(
-                                    index - 1,
-                                    subject,
-                                ),
-                                subject_status,
-                            ],
-                            spacing=7,
-                            expand=True,
-                        ),
-                        *(
-                            [
-                                ft.IconButton(
-                                    icon=ft.Icons.EDIT,
-                                    tooltip="Переименовать предмет",
-                                    data=index - 1,
-                                    on_click=self.rename_subject_click,
-                                    icon_color=BRAND_CYAN_SOFT,
-                                )
-                            ]
-                            if index in (3, 4)
-                            else []
-                        ),
-                        ft.Icon(
-                            ft.Icons.CHEVRON_RIGHT,
-                            color=BRAND_CYAN_SOFT,
-                            size=28,
-                        ),
-                    ],
-                    spacing=14,
-                    wrap=True,
+                    controls=row_controls,
+                    spacing=10,
+                    wrap=False,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 width=float("inf"),
-                padding=18,
-                border_radius=18,
+                height=86,
+                padding=ft.Padding.symmetric(
+                    horizontal=14,
+                    vertical=10,
+                ),
+                border_radius=16,
                 bgcolor=BRAND_CARD,
                 border=ft.Border.all(
                     1,
-                    ft.Colors.with_opacity(0.18, BRAND_CYAN),
+                    ft.Colors.with_opacity(
+                        0.18,
+                        BRAND_CYAN,
+                    ),
                 ),
                 ink=True,
                 ink_color=ft.Colors.with_opacity(
@@ -762,9 +780,10 @@ class EgeTrackerApp:
     ):
         title = ft.Text(
             value=subject,
-            size=20,
+            size=18,
             weight=ft.FontWeight.BOLD,
             color=BRAND_SILVER,
+            max_lines=1,
         )
 
         self.subject_title_texts[index] = title
