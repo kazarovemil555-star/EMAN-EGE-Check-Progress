@@ -2,7 +2,13 @@ import json
 
 import flet as ft
 
-from config import STORAGE_KEY, SUBJECT_NAMES_KEY
+from config import (
+    MATH_MODE_BASIC,
+    MATH_MODE_KEY,
+    MATH_MODE_PROFILE,
+    STORAGE_KEY,
+    SUBJECT_NAMES_KEY,
+)
 
 
 async def load_tests(storage: ft.SharedPreferences) -> list[dict]:
@@ -23,8 +29,10 @@ async def load_tests(storage: ft.SharedPreferences) -> list[dict]:
 
 
 async def save_tests(storage: ft.SharedPreferences, tests: list[dict]) -> None:
-    tests_json = json.dumps(tests, ensure_ascii=False)
-    await storage.set(STORAGE_KEY, tests_json)
+    await storage.set(
+        STORAGE_KEY,
+        json.dumps(tests, ensure_ascii=False),
+    )
 
 
 async def load_subject_names(
@@ -46,11 +54,11 @@ async def load_subject_names(
 
     result = list(defaults)
 
-    # Первые два предмета фиксированы.
+    # Русский язык и математика управляются отдельно.
     result[0] = defaults[0]
     result[1] = defaults[1]
 
-    # Третий и четвёртый пользователь может переименовать.
+    # Предмет 3 и Предмет 4 пользователь может переименовывать.
     for index in (2, 3):
         value = subjects[index]
         if isinstance(value, str) and value.strip():
@@ -67,3 +75,22 @@ async def save_subject_names(
         SUBJECT_NAMES_KEY,
         json.dumps(subjects, ensure_ascii=False),
     )
+
+
+async def load_math_mode(storage: ft.SharedPreferences) -> str:
+    mode = await storage.get(MATH_MODE_KEY)
+
+    if mode in (MATH_MODE_PROFILE, MATH_MODE_BASIC):
+        return mode
+
+    return MATH_MODE_PROFILE
+
+
+async def save_math_mode(
+    storage: ft.SharedPreferences,
+    mode: str,
+) -> None:
+    if mode not in (MATH_MODE_PROFILE, MATH_MODE_BASIC):
+        mode = MATH_MODE_PROFILE
+
+    await storage.set(MATH_MODE_KEY, mode)
