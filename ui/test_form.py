@@ -1,7 +1,15 @@
 import flet as ft
 
-
-CARD_COLOR = ft.Colors.BLUE_GREY_900
+from ui.theme import (
+    BRAND_CYAN,
+    BRAND_MUTED,
+    BRAND_SILVER,
+    CARD_BORDER,
+    CARD_GRADIENT,
+    primary_button,
+    secondary_button,
+    section_title,
+)
 
 
 def create_test_form(
@@ -14,35 +22,27 @@ def create_test_form(
     return ft.Container(
         content=ft.Column(
             controls=[
-                ft.Text(
-                    value="Новый пробник",
-                    size=20,
-                    weight=ft.FontWeight.BOLD,
+                section_title(
+                    "Новый пробник",
+                    "Добавь результат — он сразу попадёт в историю и график.",
                 ),
                 subject_input,
                 date_input,
                 score_input,
                 ft.Row(
                     controls=[
-                        ft.Button(
-                            content="Сохранить",
-                            icon=ft.Icons.SAVE,
-                            on_click=on_save,
-                        ),
-                        ft.Button(
-                            content="Закрыть",
-                            icon=ft.Icons.CLOSE,
-                            on_click=on_close,
-                        ),
+                        primary_button("Сохранить", ft.Icons.SAVE, on_save),
+                        secondary_button("Закрыть", ft.Icons.CLOSE, on_close),
                     ],
                     wrap=True,
                 ),
             ],
-            spacing=12,
+            spacing=14,
         ),
-        padding=20,
-        border_radius=16,
-        bgcolor=CARD_COLOR,
+        padding=22,
+        border_radius=20,
+        border=ft.Border.all(1, CARD_BORDER),
+        gradient=CARD_GRADIENT,
         visible=False,
     )
 
@@ -54,32 +54,46 @@ def create_edit_form(
     on_save,
     on_close,
 ):
+    edit_title.color = BRAND_SILVER
     return ft.Container(
         content=ft.Column(
             controls=[
-                edit_title,
+                ft.Row(
+                    controls=[
+                        ft.Container(
+                            width=4,
+                            height=24,
+                            bgcolor=BRAND_CYAN,
+                            border_radius=8,
+                        ),
+                        edit_title,
+                    ],
+                    spacing=10,
+                ),
+                ft.Text(
+                    "Исправь дату или количество баллов.",
+                    size=13,
+                    color=BRAND_MUTED,
+                ),
                 edit_date_input,
                 edit_score_input,
                 ft.Row(
                     controls=[
-                        ft.Button(
-                            content="Сохранить изменения",
-                            icon=ft.Icons.SAVE,
-                            on_click=on_save,
+                        primary_button(
+                            "Сохранить изменения",
+                            ft.Icons.SAVE,
+                            on_save,
                         ),
-                        ft.Button(
-                            content="Отмена",
-                            icon=ft.Icons.CLOSE,
-                            on_click=on_close,
-                        ),
+                        secondary_button("Отмена", ft.Icons.CLOSE, on_close),
                     ],
                     wrap=True,
                 ),
             ],
-            spacing=12,
+            spacing=14,
         ),
-        padding=20,
-        border_radius=16,
-        bgcolor=CARD_COLOR,
+        padding=22,
+        border_radius=20,
+        border=ft.Border.all(1, CARD_BORDER),
+        gradient=CARD_GRADIENT,
         visible=False,
     )
