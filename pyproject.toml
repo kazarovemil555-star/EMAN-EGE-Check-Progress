@@ -1,0 +1,17 @@
+[project]
+name = "eman-ege-check-progress"
+version = "0.1.0"
+description = "EMAN-EGE Check Progress"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "flet==0.86.5",
+    "flet-charts==0.86.5",
+]
+
+[tool.flet]
+product = "EMAN-EGE Check Progress"
+
+[tool.flet.web]
+route_url_strategy = "hash"
+pwa_background_color = "#101418"
+pwa_theme_color = "#101418"
