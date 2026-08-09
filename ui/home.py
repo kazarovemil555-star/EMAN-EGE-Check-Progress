@@ -10,7 +10,7 @@ from data import (
     update_test,
     validate_date,
 )
-from storage import load_tests, save_tests
+from storage import load_subject_names, load_tests, save_subject_names, save_tests
 from ui.history import build_history_content
 from ui.test_form import create_edit_form, create_test_form
 from ui.theme import (
@@ -37,10 +37,14 @@ class EgeTrackerApp:
         self.page = page
         self.storage = ft.SharedPreferences()
         self.tests: list[dict] = []
+        self.subjects = list(SUBJECTS)
 
         self.subject_status_texts = {}
+        self.subject_title_texts = {}
+        self.subject_cards_by_index = {}
         self.current_history_subject = None
         self.editing_test_id = None
+        self.editing_subject_index = None
 
         self.status_text = ft.Text(value="", size=14, weight=ft.FontWeight.BOLD)
         self.status_container = ft.Container(
@@ -54,10 +58,57 @@ class EgeTrackerApp:
 
         self.subject_input = ft.Dropdown(
             label="Предмет",
-            options=[
-                ft.DropdownOption(key=subject, text=subject)
-                for subject in SUBJECTS
-            ],
+            options=[],
+        )
+
+        self.subject_name_title = ft.Text(
+            value="Название предмета",
+            size=20,
+            weight=ft.FontWeight.BOLD,
+            color=BRAND_SILVER,
+        )
+
+        self.subject_name_input = ft.TextField(
+            label="Новое название",
+            hint_text="Например: Физика",
+            max_length=40,
+        )
+
+        self.subject_name_form = ft.Container(
+            content=ft.Column(
+                controls=[
+                    self.subject_name_title,
+                    ft.Text(
+                        "Можно переименовывать только Предмет 3 и Предмет 4.",
+                        size=12,
+                        color=BRAND_MUTED,
+                    ),
+                    self.subject_name_input,
+                    ft.Row(
+                        controls=[
+                            primary_button(
+                                "Сохранить название",
+                                ft.Icons.SAVE,
+                                self.save_subject_name_click,
+                            ),
+                            secondary_button(
+                                "Отмена",
+                                ft.Icons.CLOSE,
+                                self.close_subject_name_click,
+                            ),
+                        ],
+                        wrap=True,
+                        spacing=10,
+                    ),
+                ],
+                spacing=12,
+            ),
+            padding=20,
+            border_radius=18,
+            bgcolor=BRAND_SURFACE,
+            border=ft.Border.all(1, CARD_BORDER),
+            visible=False,
+            height=None,
         )
 
         self.date_input = ft.TextField(
@@ -158,6 +209,8 @@ class EgeTrackerApp:
         self.page.scroll = ft.ScrollMode.AUTO
 
         self.tests = await load_tests(self.storage)
+        self.subjects = await load_subject_names(self.storage, SUBJECTS)
+        self.refresh_subject_dropdown()
 
         if ensure_test_ids(self.tests):
             await save_tests(self.storage, self.tests)
@@ -165,59 +218,75 @@ class EgeTrackerApp:
         subject_cards = self.create_subject_cards()
 
         brand_header = ft.Container(
-            content=ft.Row(
+            content=ft.Column(
                 controls=[
-                    ft.Container(
-                        content=ft.Image(
-                            src="logo_eman.png",
-                            width=118,
-                            height=118,
-                            fit=ft.BoxFit.CONTAIN,
-                        ),
-                        width=132,
-                        height=132,
-                        alignment=ft.Alignment.CENTER,
-                    ),
-                    ft.Column(
+                    ft.Row(
                         controls=[
                             ft.Container(
-                                content=ft.Text(
-                                    "EMAN PERFORMANCE SYSTEM",
-                                    size=11,
-                                    weight=ft.FontWeight.BOLD,
-                                    color=BRAND_CYAN,
+                                content=ft.Image(
+                                    src="logo_eman.png",
+                                    width=84,
+                                    height=84,
+                                    fit=ft.BoxFit.CONTAIN,
                                 ),
-                                padding=ft.Padding.symmetric(horizontal=10, vertical=6),
-                                border_radius=10,
-                                bgcolor=ft.Colors.with_opacity(0.10, BRAND_CYAN),
-                                border=ft.Border.all(1, ft.Colors.with_opacity(0.20, BRAND_CYAN)),
+                                width=94,
+                                height=94,
+                                alignment=ft.Alignment.CENTER,
                             ),
-                            ft.Text(
-                                APP_NAME,
-                                size=32,
-                                weight=ft.FontWeight.BOLD,
-                                color=BRAND_SILVER,
-                            ),
-                            ft.Text(
-                                "Твой прогресс — в цифрах, динамике и результате.",
-                                size=16,
-                                color=BRAND_CYAN_SOFT,
-                            ),
-                            ft.Text(
-                                "Добавляй пробники, отслеживай рост и смотри историю по каждому предмету.",
-                                size=13,
-                                color=BRAND_MUTED,
+                            ft.Column(
+                                controls=[
+                                    ft.Container(
+                                        content=ft.Text(
+                                            "EMAN PERFORMANCE SYSTEM",
+                                            size=11,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=BRAND_CYAN,
+                                        ),
+                                        padding=ft.Padding.symmetric(
+                                            horizontal=10,
+                                            vertical=5,
+                                        ),
+                                        border_radius=10,
+                                        bgcolor=ft.Colors.with_opacity(
+                                            0.10,
+                                            BRAND_CYAN,
+                                        ),
+                                        border=ft.Border.all(
+                                            1,
+                                            ft.Colors.with_opacity(
+                                                0.20,
+                                                BRAND_CYAN,
+                                            ),
+                                        ),
+                                    ),
+                                    ft.Text(
+                                        APP_NAME,
+                                        size=30,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=BRAND_SILVER,
+                                    ),
+                                ],
+                                spacing=7,
                             ),
                         ],
-                        spacing=7,
-                        expand=True,
+                        spacing=16,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
+                    ft.Text(
+                        "Твой прогресс — в цифрах, динамике и результате.",
+                        size=15,
+                        color=BRAND_CYAN_SOFT,
+                    ),
+                    ft.Text(
+                        "Добавляй пробники, отслеживай рост и смотри историю по каждому предмету.",
+                        size=12,
+                        color=BRAND_MUTED,
                     ),
                 ],
-                spacing=18,
-                wrap=True,
+                spacing=8,
             ),
-            padding=24,
-            border_radius=24,
+            padding=20,
+            border_radius=22,
             gradient=HEADER_GRADIENT,
             border=ft.Border.all(1, CARD_BORDER),
         )
@@ -246,18 +315,20 @@ class EgeTrackerApp:
                             ),
                         ],
                         spacing=3,
-                        expand=True,
                     ),
                     add_test_button,
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                wrap=True,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=14,
             ),
-            padding=18,
+            padding=16,
             border_radius=18,
             bgcolor=BRAND_SURFACE,
-            border=ft.Border.all(1, ft.Colors.with_opacity(0.18, BRAND_CYAN)),
+            border=ft.Border.all(
+                1,
+                ft.Colors.with_opacity(0.18, BRAND_CYAN),
+            ),
         )
 
         subjects_header = section_title(
@@ -285,6 +356,7 @@ class EgeTrackerApp:
                         action_bar,
                         self.test_form,
                         self.edit_form,
+                        self.subject_name_form,
                         self.status_container,
                         self.history_panel,
                         subjects_header,
@@ -294,7 +366,7 @@ class EgeTrackerApp:
                         ),
                         footer,
                     ],
-                    spacing=16,
+                    spacing=12,
                 )
             )
         )
@@ -305,7 +377,7 @@ class EgeTrackerApp:
     def create_subject_cards(self):
         subject_cards = []
 
-        for index, subject in enumerate(SUBJECTS, start=1):
+        for index, subject in enumerate(self.subjects, start=1):
             subject_status = ft.Text(
                 value="Пробников пока нет",
                 size=13,
@@ -339,16 +411,24 @@ class EgeTrackerApp:
                         ),
                         ft.Column(
                             controls=[
-                                ft.Text(
-                                    value=subject,
-                                    size=20,
-                                    weight=ft.FontWeight.BOLD,
-                                    color=BRAND_SILVER,
-                                ),
+                                self._create_subject_title(index - 1, subject),
                                 subject_status,
                             ],
                             spacing=7,
                             expand=True,
+                        ),
+                        *(
+                            [
+                                ft.IconButton(
+                                    icon=ft.Icons.EDIT,
+                                    tooltip="Переименовать предмет",
+                                    data=index - 1,
+                                    on_click=self.rename_subject_click,
+                                    icon_color=BRAND_CYAN_SOFT,
+                                )
+                            ]
+                            if index in (3, 4)
+                            else []
                         ),
                         ft.Icon(
                             ft.Icons.CHEVRON_RIGHT,
@@ -369,12 +449,29 @@ class EgeTrackerApp:
                 on_click=self.subject_card_click,
             )
 
+            self.subject_cards_by_index[index - 1] = card
             subject_cards.append(card)
 
         return subject_cards
 
+    def _create_subject_title(self, index, subject):
+        title = ft.Text(
+            value=subject,
+            size=20,
+            weight=ft.FontWeight.BOLD,
+            color=BRAND_SILVER,
+        )
+        self.subject_title_texts[index] = title
+        return title
+
+    def refresh_subject_dropdown(self):
+        self.subject_input.options = [
+            ft.DropdownOption(key=subject, text=subject)
+            for subject in self.subjects
+        ]
+
     def update_all_subject_cards(self):
-        for subject in SUBJECTS:
+        for subject in self.subjects:
             self.update_subject_card(subject)
 
     def update_subject_card(self, subject):
@@ -393,6 +490,95 @@ class EgeTrackerApp:
             f"Всего: {len(subject_tests)}"
         )
         self.subject_status_texts[subject].color = BRAND_CYAN_SOFT
+
+    def rename_subject_click(self, e):
+        index = e.control.data
+
+        if index not in (2, 3):
+            return
+
+        self.editing_subject_index = index
+        self.subject_name_title.value = f"Название предмета {index + 1}"
+        self.subject_name_input.value = self.subjects[index]
+        self.subject_name_form.visible = True
+        self.test_form.visible = False
+        self.edit_form.visible = False
+        self.clear_status()
+        self.page.update()
+
+    def close_subject_name_click(self, e):
+        self.subject_name_form.visible = False
+        self.editing_subject_index = None
+        self.page.update()
+
+    async def save_subject_name_click(self, e):
+        index = self.editing_subject_index
+
+        if index not in (2, 3):
+            return
+
+        new_name = (self.subject_name_input.value or "").strip()
+
+        if not new_name:
+            self.set_status("Название предмета не может быть пустым.", "#FF7D89")
+            self.page.update()
+            return
+
+        if len(new_name) > 40:
+            self.set_status("Название слишком длинное.", "#FF7D89")
+            self.page.update()
+            return
+
+        if new_name in self.subjects and new_name != self.subjects[index]:
+            self.set_status("Такой предмет уже есть.", "#FF7D89")
+            self.page.update()
+            return
+
+        old_name = self.subjects[index]
+
+        if new_name == old_name:
+            self.subject_name_form.visible = False
+            self.editing_subject_index = None
+            self.page.update()
+            return
+
+        # Переносим старые пробники на новое название предмета.
+        changed_tests = False
+        for test in self.tests:
+            if test.get("subject") == old_name:
+                test["subject"] = new_name
+                changed_tests = True
+
+        self.subjects[index] = new_name
+
+        status_control = self.subject_status_texts.pop(old_name, None)
+        if status_control is not None:
+            self.subject_status_texts[new_name] = status_control
+
+        title_control = self.subject_title_texts.get(index)
+        if title_control is not None:
+            title_control.value = new_name
+
+        card = self.subject_cards_by_index.get(index)
+        if card is not None:
+            card.data = new_name
+
+        self.refresh_subject_dropdown()
+        await save_subject_names(self.storage, self.subjects)
+
+        if changed_tests:
+            await save_tests(self.storage, self.tests)
+
+        if self.current_history_subject == old_name:
+            self.current_history_subject = new_name
+            if self.history_panel.visible:
+                self.show_history(new_name)
+
+        self.update_subject_card(new_name)
+        self.subject_name_form.visible = False
+        self.editing_subject_index = None
+        self.set_status(f"Предмет переименован: {new_name}.", BRAND_SUCCESS)
+        self.page.update()
 
     def set_status(self, text, color):
         self.status_text.value = text
